@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>YBYRA · a via em 3D</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* A via em 3D: um trecho com dormentes de madeira, etiquetas e o carro de inspeção. Dados de exemplo. */
+:root{--tinta:#1E2A20;--tinta2:#46524A;--sup:#FBF7F2;--linha:#E2D8C8;--areia:#D5C4A1;--raio:10px}
+body.noite{--tinta:#F1E9DF;--tinta2:#D5C4A1;--sup:#1E2A20;--linha:#46584B}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#F1E9E0;color:var(--tinta);font-family:'Josefin Sans',system-ui,sans-serif;font-size:15px}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+canvas:active{cursor:grabbing}
+.mono{font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace}
+.barra{position:fixed;left:10px;right:10px;top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;pointer-events:none}
+.barra > *{pointer-events:auto}
+.caixa{background:var(--sup);border:1px solid var(--linha);border-radius:var(--raio);padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+.caixa small{font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--tinta2)}
+.nota{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;font-weight:600}
+.nota i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.botoes{display:flex;gap:6px;flex-wrap:wrap}
+button{font:inherit;font-weight:700;min-height:44px;padding:0 14px;border-radius:var(--raio);border:1px solid var(--linha);background:var(--sup);color:var(--tinta);cursor:pointer}
+button:hover{border-color:var(--areia)}
+button:focus-visible{outline:3px solid var(--areia);outline-offset:2px}
+.ficha{position:fixed;left:10px;bottom:10px;width:min(300px,calc(100% - 20px));background:var(--sup);border:1px solid var(--linha);border-radius:var(--raio);padding:12px 14px;box-shadow:0 8px 24px -14px rgba(0,0,0,.5)}
+.ficha[hidden]{display:none}
+.ficha-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.ficha-topo b{font-size:1.05rem}
+.ficha dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.92rem}
+.ficha dt{color:var(--tinta2)}
+.ficha dd{margin:0;font-weight:600}
+.alerta{color:#A8323F}
+body.noite .alerta{color:#D9848C}
+.dica{position:fixed;right:12px;bottom:12px;font-size:.8rem;color:var(--tinta2);background:var(--sup);border:1px solid var(--linha);border-radius:999px;padding:4px 12px;pointer-events:none}
+.aviso{position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center}
+.aviso[hidden]{display:none}
+@media (max-width:560px){.dica{display:none}.caixa small{display:none}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<canvas id="cena" aria-label="Trecho de via em 3D, com dormentes de madeira e o carro de inspeção"></canvas>
+
+<div class="barra">
+  <div class="caixa" aria-label="Notas dos dormentes">
+    <small>Nota</small>
+    <span class="nota"><i style="background:#64786E"></i>Bom</span>
+    <span class="nota"><i style="background:#D5C4A1"></i>Regular</span>
+    <span class="nota"><i style="background:#8A5A38"></i>Ruim</span>
+    <span class="nota"><i style="background:#A8323F"></i>Crítico</span>
+  </div>
+  <div class="botoes">
+    <button type="button" id="b-luz">Noite</button>
+    <button type="button" id="b-carro">Pausar</button>
+    <button type="button" id="b-vista">Vista de cima</button>
+  </div>
+</div>
+
+<div class="ficha" id="ficha" hidden>
+  <div class="ficha-topo"><b class="mono" id="f-peca"></b><button type="button" id="f-fechar">Fechar</button></div>
+  <dl>
+    <dt>Espécie</dt><dd>Espécie de exemplo</dd>
+    <dt>Comprimento</dt><dd>2,80 m</dd>
+    <dt>Nota</dt><dd id="f-nota"></dd>
+    <dt>Km</dt><dd class="mono" id="f-km"></dd>
+    <dt>Etiqueta</dt><dd id="f-tag"></dd>
+  </dl>
+</div>
+<p class="dica">Dados de exemplo · arraste para girar · selecione um dormente</p>
+<p class="aviso" id="aviso" hidden>Este aparelho não conseguiu abrir a cena 3D.</p>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const NOTAS = { 'Bom': '#64786E', 'Regular': '#D5C4A1', 'Ruim': '#8A5A38', 'Crítico': '#A8323F' };
+const canvas = document.getElementById('cena');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+} catch (erro) {
+  document.getElementById('aviso').hidden = false;
+  throw erro;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const cena = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 120);
+// Câmera: na tela deitada (computador), vê a via de lado; na tela em pé (celular), olha ao longo da via,
+// para o trecho inteiro ficar em pé e caber na tela. A vista de cima também gira para a via ficar em pé no celular.
+const VISTA_DEITADA = new THREE.Vector3(3.4, 4.0, 9.4), TOPO_DEITADA = new THREE.Vector3(0.001, 11.5, 0.01);
+const VISTA_EM_PE = new THREE.Vector3(9.6, 7.2, 2.8), TOPO_EM_PE = new THREE.Vector3(0.01, 11.5, 0.001);
+const emPe = () => innerWidth < innerHeight;
+const vista = () => (emPe() ? VISTA_EM_PE : VISTA_DEITADA);
+const topo = () => (emPe() ? TOPO_EM_PE : TOPO_DEITADA);
+camera.position.copy(vista());
+const controles = new OrbitControls(camera, canvas);
+controles.target.set(0, 0.3, 0);
+controles.enableDamping = true;
+controles.enablePan = false;
+controles.minDistance = 3;
+controles.maxDistance = 17;
+controles.maxPolarAngle = 1.48;
+
+// ---------- luz ----------
+const ceu = new THREE.HemisphereLight(0xffffff, 0xb8a98f, 1.0);
+cena.add(ceu);
+const sol = new THREE.DirectionalLight(0xfff2dd, 2.2);
+sol.position.set(4, 8, 5);
+sol.castShadow = true;
+sol.shadow.mapSize.set(1024, 1024);
+Object.assign(sol.shadow.camera, { left: -8, right: 8, top: 6, bottom: -6, near: 1, far: 26 });
+sol.shadow.bias = -0.0006;
+cena.add(sol);
+
+// ---------- chão e lastro ----------
+const matChao = new THREE.MeshStandardMaterial({ color: '#E4D9C8', roughness: 1 });
+const chao = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), matChao);
+chao.rotation.x = -Math.PI / 2;
+chao.receiveShadow = true;
+cena.add(chao);
+
+const matLastro = new THREE.MeshStandardMaterial({ color: '#A99C86', roughness: 1 });
+const lastro = new THREE.Mesh(new THREE.BoxGeometry(11.6, 0.2, 3.7), matLastro);
+lastro.position.y = 0.1;
+lastro.receiveShadow = true;
+cena.add(lastro);
+
+// brita: pedrinhas espalhadas sobre o lastro
+const PEDRAS = 900;
+const pedras = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.04), new THREE.MeshStandardMaterial({ roughness: 1 }), PEDRAS);
+const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), esc = new THREE.Vector3(), pos = new THREE.Vector3(), corPedra = new THREE.Color();
+for (let i = 0; i < PEDRAS; i++) {
+  pos.set((Math.random() - 0.5) * 11.4, 0.2 + Math.random() * 0.015, (Math.random() - 0.5) * 3.5);
+  q.setFromEuler(new THREE.Euler(Math.random() * 3, Math.random() * 3, Math.random() * 3));
+  const s = 0.6 + Math.random() * 0.9;
+  esc.set(s, s * 0.7, s);
+  pedras.setMatrixAt(i, m4.compose(pos, q, esc));
+  pedras.setColorAt(i, corPedra.set('#A99C86').offsetHSL(0, 0, (Math.random() - 0.5) * 0.14));
+}
+pedras.receiveShadow = true;
+cena.add(pedras);
+
+// ---------- dormentes ----------
+const N = 16, PASSO = 0.62, X0 = -((N - 1) * PASSO) / 2, Y_DORMENTE = 0.2, ALTURA = 0.17;
+const notas = Array(N).fill('Bom');
+notas[3] = 'Regular'; notas[6] = 'Ruim'; notas[9] = 'Crítico'; notas[11] = 'Ruim';
+const SEM_RESPOSTA = 13;
+const dormentes = [];
+for (let i = 0; i < N; i++) {
+  const g = new THREE.Group();
+  g.position.set(X0 + i * PASSO, Y_DORMENTE, 0);
+  const madeira = new THREE.Color('#563624').lerp(new THREE.Color('#7A5236'), Math.random() * 0.7);
+  const matCorpo = new THREE.MeshStandardMaterial({ color: madeira, roughness: 0.92, emissive: '#D5C4A1', emissiveIntensity: 0 });
+  const corpo = new THREE.Mesh(new THREE.BoxGeometry(0.26, ALTURA, 2.8 + (Math.random() - 0.5) * 0.06), matCorpo);
+  corpo.position.y = ALTURA / 2;
+  corpo.rotation.y = (Math.random() - 0.5) * 0.02;
+  corpo.castShadow = true; corpo.receiveShadow = true;
+  corpo.userData.i = i;
+  g.add(corpo);
+  // a nota aparece numa faixa na ponta, para a madeira continuar parecendo madeira
+  const faixa = new THREE.Mesh(new THREE.BoxGeometry(0.275, ALTURA + 0.012, 0.18), new THREE.MeshStandardMaterial({ color: NOTAS[notas[i]], roughness: 0.6 }));
+  faixa.position.set(0, ALTURA / 2, 1.3);
+  g.add(faixa);
+  // a etiqueta RFID
+  const responde = i !== SEM_RESPOSTA;
+  const matTag = new THREE.MeshStandardMaterial({ color: responde ? '#D5C4A1' : '#A8323F', roughness: 0.5, emissive: responde ? '#FFF3C4' : '#A8323F', emissiveIntensity: responde ? 0 : 0.35 });
+  const tag = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.22), matTag);
+  tag.position.set(0, ALTURA + 0.015, 0.36);
+  tag.castShadow = true;
+  g.add(tag);
+  cena.add(g);
+  dormentes.push({ x: g.position.x, corpo, matCorpo, matTag, nota: notas[i], responde, brilho: 0 });
+}
+
+// ---------- trilhos ----------
+const Y_TRILHO = Y_DORMENTE + ALTURA;
+const matAco = new THREE.MeshStandardMaterial({ color: '#8A7A62', roughness: 0.38, metalness: 0.7 });
+const matBoleto = new THREE.MeshStandardMaterial({ color: '#B5A68C', roughness: 0.22, metalness: 0.85 });
+for (const z of [-0.8, 0.8]) {
+  const patim = new THREE.Mesh(new THREE.BoxGeometry(11.4, 0.025, 0.15), matAco); patim.position.set(0, Y_TRILHO + 0.0125, z);
+  const alma = new THREE.Mesh(new THREE.BoxGeometry(11.4, 0.1, 0.03), matAco); alma.position.set(0, Y_TRILHO + 0.075, z);
+  const boleto = new THREE.Mesh(new THREE.BoxGeometry(11.4, 0.045, 0.075), matBoleto); boleto.position.set(0, Y_TRILHO + 0.1475, z);
+  for (const p of [patim, alma, boleto]) { p.castShadow = true; p.receiveShadow = true; cena.add(p); }
+}
+const Y_RODA = Y_TRILHO + 0.17;
+
+// ---------- carro de inspeção ----------
+const carro = new THREE.Group();
+const matCasco = new THREE.MeshStandardMaterial({ color: '#1E2A20', roughness: 0.5, metalness: 0.2 });
+const matFaixa = new THREE.MeshStandardMaterial({ color: '#D5C4A1', roughness: 0.6 });
+const matVidro = new THREE.MeshStandardMaterial({ color: '#0F1712', roughness: 0.15, metalness: 0.6 });
+const matRoda = new THREE.MeshStandardMaterial({ color: '#3A3F3B', roughness: 0.4, metalness: 0.8 });
+const R = 0.2, rodas = [];
+for (const x of [-0.6, 0.6]) {
+  for (const z of [-0.8, 0.8]) {
+    const roda = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.09, 28), matRoda);
+    roda.rotation.x = Math.PI / 2;
+    roda.position.set(x, Y_RODA + R, z);
+    roda.castShadow = true;
+    const pino = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, 0.05), matFaixa);
+    pino.position.set(R * 0.6, 0, 0);
+    roda.add(pino);
+    carro.add(roda); rodas.push(roda);
+  }
+  const eixo = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.6, 12), matRoda);
+  eixo.rotation.x = Math.PI / 2; eixo.position.set(x, Y_RODA + R, 0);
+  carro.add(eixo);
+}
+const Y_CASCO = Y_RODA + R + 0.3;
+const casco = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.4, 1.5), matCasco); casco.position.y = Y_CASCO; casco.castShadow = true; carro.add(casco);
+const friso = new THREE.Mesh(new THREE.BoxGeometry(2.02, 0.07, 1.52), matFaixa); friso.position.y = Y_CASCO - 0.08; carro.add(friso);
+const cabine = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.55, 1.36), matCasco); cabine.position.set(-0.38, Y_CASCO + 0.475, 0); cabine.castShadow = true; carro.add(cabine);
+const vidro = new THREE.Mesh(new THREE.BoxGeometry(0.97, 0.26, 1.38), matVidro); vidro.position.set(-0.38, Y_CASCO + 0.52, 0); carro.add(vidro);
+const caixaLeitor = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.6), matFaixa); caixaLeitor.position.set(0.45, Y_CASCO + 0.28, 0); caixaLeitor.castShadow = true; carro.add(caixaLeitor);
+// o leitor e a câmera, embaixo do carro, apontados para os dormentes
+const Y_LEITOR = Y_CASCO - 0.24;
+const leitor = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.08, 20), matFaixa); leitor.position.set(0, Y_LEITOR, 0.3); carro.add(leitor);
+const alturaCone = Y_LEITOR - (Y_DORMENTE + ALTURA);
+const matCone = new THREE.MeshBasicMaterial({ color: '#FFE9A8', transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false });
+const cone = new THREE.Mesh(new THREE.ConeGeometry(0.5, alturaCone, 28, 1, true), matCone);
+cone.position.set(0, Y_LEITOR - alturaCone / 2, 0.3);
+carro.add(cone);
+const foco = new THREE.SpotLight(0xffe9a8, 0.6, 3, 0.95, 0.7, 2);
+foco.position.set(0, Y_LEITOR, 0.3);
+foco.target.position.set(0, 0, 0.3);
+carro.add(foco, foco.target);
+cena.add(carro);
+
+// ---------- dia e noite ----------
+let noite = false;
+function aplicarLuz() {
+  const fundo = new THREE.Color(noite ? '#121A14' : '#F1E9E0');
+  cena.background = fundo;
+  cena.fog = new THREE.Fog(fundo, 16, 44);
+  ceu.intensity = noite ? 0.2 : 1.0;
+  sol.intensity = noite ? 0.3 : 2.2;
+  sol.color.set(noite ? '#8FA8C8' : '#FFF2DD');
+  matChao.color.set(noite ? '#18241B' : '#E4D9C8');
+  foco.intensity = noite ? 3.2 : 0.6;
+  matCone.opacity = noite ? 0.34 : 0.16;
+  document.body.classList.toggle('noite', noite);
+  document.body.style.background = noite ? '#121A14' : '#F1E9E0';
+  document.getElementById('b-luz').textContent = noite ? 'Dia' : 'Noite';
+}
+aplicarLuz();
+document.getElementById('b-luz').addEventListener('click', () => { noite = !noite; aplicarLuz(); });
+
+// ---------- carro andando ----------
+let andando = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+const botaoCarro = document.getElementById('b-carro');
+const rotuloCarro = () => { botaoCarro.textContent = andando ? 'Pausar' : 'Andar'; };
+rotuloCarro();
+botaoCarro.addEventListener('click', () => { andando = !andando; rotuloCarro(); });
+
+// ---------- vista de cima ----------
+let alvoCamera = null, deCima = false;
+const botaoVista = document.getElementById('b-vista');
+botaoVista.addEventListener('click', () => {
+  deCima = !deCima;
+  alvoCamera = (deCima ? topo() : vista()).clone();
+  botaoVista.textContent = deCima ? 'Vista de lado' : 'Vista de cima';
+});
+// Depois que a pessoa gira a cena com o dedo ou o mouse, a câmera não volta sozinha para a vista padrão.
+let mexeu = false;
+controles.addEventListener('start', () => { alvoCamera = null; mexeu = true; });
+
+// ---------- escolher um dormente ----------
+const ficha = document.getElementById('ficha');
+let escolhido = -1;
+function escolher(i) {
+  escolhido = i;
+  dormentes.forEach((d, k) => { d.matCorpo.emissiveIntensity = k === i ? 0.4 : 0; });
+  if (i < 0) { ficha.hidden = true; return; }
+  const d = dormentes[i];
+  document.getElementById('f-peca').textContent = 'DM-E01-L02-' + String(20 + i).padStart(4, '0');
+  document.getElementById('f-nota').textContent = d.nota;
+  document.getElementById('f-km').textContent = (213.1 + i * 0.00062).toFixed(3).replace('.', ',');
+  const celula = document.getElementById('f-tag');
+  celula.textContent = d.responde ? 'respondeu' : 'não respondeu';
+  celula.className = d.responde ? '' : 'alerta';
+  ficha.hidden = false;
+}
+document.getElementById('f-fechar').addEventListener('click', () => escolher(-1));
+addEventListener('keydown', (e) => { if (e.key === 'Escape') escolher(-1); });
+
+const raio = new THREE.Raycaster(), ponto = new THREE.Vector2();
+let apertou = null;
+canvas.addEventListener('pointerdown', (e) => { apertou = [e.clientX, e.clientY]; });
+canvas.addEventListener('pointerup', (e) => {
+  if (!apertou) return;
+  const andou = Math.hypot(e.clientX - apertou[0], e.clientY - apertou[1]);
+  apertou = null;
+  if (andou > 6) return; // foi um arrasto para girar, não um toque
+  const caixa = canvas.getBoundingClientRect();
+  ponto.set(((e.clientX - caixa.left) / caixa.width) * 2 - 1, -((e.clientY - caixa.top) / caixa.height) * 2 + 1);
+  raio.setFromCamera(ponto, camera);
+  const toque = raio.intersectObjects(dormentes.map((d) => d.corpo), false)[0];
+  escolher(toque ? toque.object.userData.i : -1);
+});
+
+// ---------- tamanho da tela ----------
+function ajustar() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.fov = w < h ? 60 : 42;
+  camera.updateProjectionMatrix();
+  // Girou o aparelho e ninguém mexeu na cena ainda: troca para a vista que cabe na tela nova.
+  if (typeof mexeu !== 'undefined' && !mexeu && !alvoCamera) camera.position.copy(deCima ? topo() : vista());
+}
+addEventListener('resize', ajustar);
+ajustar();
+
+// ---------- o quadro a quadro ----------
+const LIMITE = 3.9, VELOCIDADE = 0.75;
+let xCarro = -LIMITE, sentido = 1, antes = performance.now();
+carro.position.x = xCarro;
+renderer.setAnimationLoop((agora) => {
+  const dt = Math.min(0.05, (agora - antes) / 1000);
+  antes = agora;
+  if (document.hidden) return;
+  if (andando) {
+    xCarro += sentido * VELOCIDADE * dt;
+    if (xCarro > LIMITE) { xCarro = LIMITE; sentido = -1; }
+    if (xCarro < -LIMITE) { xCarro = -LIMITE; sentido = 1; }
+    carro.position.x = xCarro;
+    for (const roda of rodas) roda.rotation.y -= (sentido * VELOCIDADE * dt) / R;
+  }
+  // a etiqueta pisca quando o leitor passa por cima; a que não responde fica em vinho
+  for (const d of dormentes) {
+    if (!d.responde) continue;
+    if (andando && Math.abs(d.x - xCarro) < 0.1) d.brilho = 1;
+    d.brilho = Math.max(0, d.brilho - dt * 1.8);
+    d.matTag.emissiveIntensity = d.brilho * 1.8;
+  }
+  if (alvoCamera) {
+    camera.position.lerp(alvoCamera, 1 - Math.pow(0.002, dt));
+    if (camera.position.distanceTo(alvoCamera) < 0.02) alvoCamera = null;
+  }
+  controles.update();
+  renderer.render(cena, camera);
+});
+</script>
+</body>
+</html>
