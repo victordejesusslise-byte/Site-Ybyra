@@ -7,13 +7,13 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* A via em 3D: um trecho com dormentes de madeira, etiquetas e o carro de inspeção. Dados de exemplo. */
 :root{--tinta:#1E2A20;--tinta2:#46524A;--sup:#FBF7F2;--linha:#E2D8C8;--areia:#D5C4A1;--raio:10px}
 body.noite{--tinta:#F1E9DF;--tinta2:#D5C4A1;--sup:#1E2A20;--linha:#46584B}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;background:#F1E9E0;color:var(--tinta);font-family:'Josefin Sans',system-ui,sans-serif;font-size:15px}
+html,body{margin:0;height:100%;overflow:hidden;background:#F1E9E0;color:var(--tinta);font-family:'Lato',system-ui,sans-serif;font-size:15px}
 canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
 canvas:active{cursor:grabbing}
 .mono{font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace}
@@ -51,10 +51,10 @@ body.noite .alerta{color:#D9848C}
 <div class="barra">
   <div class="caixa" aria-label="Notas dos dormentes">
     <small>Nota</small>
-    <span class="nota"><i style="background:#64786E"></i>Bom</span>
-    <span class="nota"><i style="background:#D5C4A1"></i>Regular</span>
-    <span class="nota"><i style="background:#8A5A38"></i>Ruim</span>
-    <span class="nota"><i style="background:#A8323F"></i>Crítico</span>
+    <span class="nota"><i style="background:#2B7550"></i>✓ Bom</span>
+    <span class="nota"><i style="background:#E9CB76"></i>– Regular</span>
+    <span class="nota"><i style="background:#D07A35"></i>! Ruim</span>
+    <span class="nota"><i style="background:#5C1424"></i>✕ Crítico</span>
   </div>
   <div class="botoes">
     <button type="button" id="b-luz">Noite</button>
@@ -80,7 +80,9 @@ body.noite .alerta{color:#D9848C}
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const NOTAS = { 'Bom': '#64786E', 'Regular': '#D5C4A1', 'Ruim': '#8A5A38', 'Crítico': '#A8323F' };
+// As mesmas cores das notas do site, testadas para daltonismo; o símbolo vai junto na legenda e na ficha.
+const NOTAS = { 'Bom': '#2B7550', 'Regular': '#E9CB76', 'Ruim': '#D07A35', 'Crítico': '#5C1424' };
+const SIMBOLOS = { 'Bom': '✓', 'Regular': '–', 'Ruim': '!', 'Crítico': '✕' };
 const canvas = document.getElementById('cena');
 let renderer;
 try {
@@ -283,7 +285,7 @@ function escolher(i) {
   if (i < 0) { ficha.hidden = true; return; }
   const d = dormentes[i];
   document.getElementById('f-peca').textContent = 'DM-E01-L02-' + String(20 + i).padStart(4, '0');
-  document.getElementById('f-nota').textContent = d.nota;
+  document.getElementById('f-nota').textContent = SIMBOLOS[d.nota] + ' ' + d.nota;
   document.getElementById('f-km').textContent = (213.1 + i * 0.00062).toFixed(3).replace('.', ',');
   const celula = document.getElementById('f-tag');
   celula.textContent = d.responde ? 'respondeu' : 'não respondeu';

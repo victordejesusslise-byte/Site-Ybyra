@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>YBYRA · cada dormente de madeira, da compra até a troca na via</title>
+<title>YBYRA · rastreamento e controle de dormentes de madeira</title>
 <meta name="description" content="Apresentação do YBYRA: o sistema que acompanha cada dormente de madeira de uma ferrovia, do pedido ao fornecedor até a troca na via.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#1E2A20">
 <link rel="icon" href="assets/logo-ybyra-claro.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* As cores, as fontes e o raio são os mesmos do sistema. Claro por padrão; o escuro só pelo botão. */
 :root{
@@ -22,10 +22,11 @@
   --trilho:#8A7A62; --trilho-luz:#B5A68C; --dormente:#563624; --dormente-tinta:#F1E9E0;
   --escolhido:#1E2A20; --escolhido-tinta:#F1E9E0;
   --feito:#2F5A3A; --feito-bg:#DDE7DA; --parcial:#7A4A2C; --parcial-bg:#EEDCC8; --papel:#55625A;
-  --nota-bom:#64786E; --nota-regular:#D5C4A1; --nota-ruim:#563624; --nota-critico:#A8323F;
+  /* Notas da peça: cores testadas para daltonismo (protanopia, deuteranopia, tritanopia e preto e branco); cada nota também tem um símbolo */
+  --nota-bom:#2B7550; --nota-regular:#E9CB76; --nota-ruim:#D07A35; --nota-critico:#5C1424;
   --sombra:0 1px 2px rgba(30,42,32,.06),0 6px 18px -12px rgba(30,42,32,.25);
   --raio:10px;
-  --f:'Josefin Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+  --f:'Lato',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
   color-scheme:light;
 }
 :root[data-theme="dark"]{
@@ -35,7 +36,6 @@
   --bloco:#121A14; --trilho:#8C8170; --trilho-luz:#B9AE9A; --dormente:#C08457; --dormente-tinta:#1E2A20;
   --escolhido:#F1E9DF; --escolhido-tinta:#1E2A20;
   --feito:#A9D3AE; --feito-bg:#24402B; --parcial:#E7C9A4; --parcial-bg:#4A3424; --papel:#A9B5AD;
-  --nota-bom:#9DB3A6; --nota-ruim:#C08457;
   --sombra:0 1px 2px rgba(0,0,0,.5),0 6px 18px -12px rgba(0,0,0,.7);
   color-scheme:dark;
 }
@@ -72,7 +72,7 @@ button{font:inherit;color:inherit}
   .marca{letter-spacing:.22em;font-size:.92rem}
   .tema{margin-left:auto;min-height:36px;padding:0 10px;font-size:.85rem}
   .abas{order:3;flex:1 0 100%;margin:0 -6px;justify-content:space-between}
-  .aba-b{padding:9px 6px 8px;font-size:.88rem}
+  .aba-b{padding:9px 4px 8px;font-size:.84rem}
 }
 
 .aba{display:none;padding-bottom:56px}
@@ -130,13 +130,13 @@ button{font:inherit;color:inherit}
 .pergunta h3{font-size:1.12rem}
 .pergunta p{color:var(--tinta2)}
 /* O mapa do site: um cartão por aba, cada um leva à sua parte */
-.mapa-site{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.mapa-site{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .mapa-site a{display:grid;gap:6px;align-content:start;padding:16px;border-radius:var(--raio);border:1px solid var(--linha);background:var(--sup);box-shadow:var(--sombra);text-decoration:none;min-height:44px;transition:border-color .15s,transform .15s}
 .mapa-site a:hover{border-color:var(--marcador);transform:translateY(-2px)}
 .mapa-site b{font-size:1.05rem;display:flex;justify-content:space-between;align-items:center}
 .mapa-site b::after{content:"→";color:var(--marcador)}
 .mapa-site span{font-size:.9rem;color:var(--tinta2);line-height:1.4}
-@media (max-width:900px){.mapa-site{grid-template-columns:repeat(2,minmax(0,1fr))}.mapa-site a:last-child{grid-column:1/-1}}
+@media (max-width:900px){.mapa-site{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* Estado de cada parte */
 .estado{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;font-weight:700;letter-spacing:.04em;padding:3px 10px;border-radius:999px;white-space:nowrap;justify-self:start}
@@ -241,6 +241,16 @@ button{font:inherit;color:inherit}
 .ia dl{margin:4px 0 0;display:grid;gap:8px;font-size:.92rem}
 .ia dt{font-weight:700;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta3)}
 .ia dd{margin:0}
+/* Os passos de como cada IA aprende: numerados, em fila no computador */
+.passos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;counter-reset:passo}
+.passos li{counter-increment:passo;padding:14px;border:1px solid var(--linha);border-radius:var(--raio);background:var(--sup);box-shadow:var(--sombra);display:grid;gap:4px;align-content:start}
+.passos li::before{content:counter(passo, decimal-leading-zero);font-family:var(--mono);font-size:.85rem;color:var(--marcador)}
+.passos b{font-size:1rem}
+.passos span{font-size:.9rem;color:var(--tinta2);line-height:1.4}
+@media (max-width:900px){.passos{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:520px){.passos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bloco-titulo p a{color:var(--tinta);font-weight:700;text-underline-offset:3px}
+.cartao ul.lista{margin:2px 0 0;padding-left:18px;display:grid;gap:6px;color:var(--tinta2);font-size:.95rem}
 
 /* O código da peça, parte por parte: cada parte com um traço de cor embaixo e a explicação */
 .codigo{list-style:none;margin:0;padding:22px 26px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 44px;border:1px solid var(--linha);border-radius:var(--raio);background:var(--sup);box-shadow:var(--sombra)}
@@ -265,7 +275,9 @@ button{font:inherit;color:inherit}
 .cor b{font-size:.98rem}.cor span{font-size:.8rem;color:var(--tinta2);line-height:1.3}
 @media (max-width:900px){.cores{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .notas{display:flex;flex-wrap:wrap;gap:8px}
-.nota{display:inline-flex;align-items:center;min-height:32px;padding:0 14px;border-radius:6px;font-weight:700;font-size:.9rem}
+.nota{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 14px;border-radius:6px;font-weight:700;font-size:.9rem}
+/* No escuro, um contorno claro solta as notas do fundo verde-mata (o Crítico é um vinho bem escuro) */
+:root[data-theme="dark"] .nota{box-shadow:0 0 0 1px rgba(241,233,224,.35)}
 .tipos{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}
 .tipo-a{font-size:clamp(2.4rem,8vw,4rem);font-weight:700;line-height:1;letter-spacing:.02em}
 .tipo-b{font-family:var(--mono);font-size:clamp(1.3rem,4.6vw,2rem);line-height:1.2;white-space:nowrap}
@@ -393,8 +405,9 @@ footer .pagina{display:grid;gap:6px}
 
 /* Movimento ao passar pelo site */
 .progresso{position:absolute;left:0;bottom:0;height:3px;width:100%;transform-origin:0 50%;transform:scaleX(var(--p,0));background:var(--areia);pointer-events:none}
-/* Só na descida: as partes sobem de baixo ao entrar na tela. Na subida, nada se mexe. */
+/* Na descida, as partes sobem de baixo ao entrar na tela; na subida, descem de cima. */
 .rev{opacity:0;transform:translateY(26px);transition:opacity .55s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+.rev.de-cima{transform:translateY(-26px)}
 .rev.visto{opacity:1;transform:none;transition-delay:var(--d,0ms)}
 .aba.ativa{animation:entra .4s ease backwards}
 @keyframes entra{from{opacity:0;transform:translateY(12px)}}
@@ -420,9 +433,10 @@ footer .pagina{display:grid;gap:6px}
       <button class="aba-b" role="tab" data-aba="inicio" aria-selected="true">Início</button>
       <button class="aba-b" role="tab" data-aba="fluxo" aria-selected="false">Fluxo</button>
       <button class="aba-b" role="tab" data-aba="sistema" aria-selected="false">Sistema</button>
+      <button class="aba-b" role="tab" data-aba="hardware" aria-selected="false">Hardware</button>
+      <button class="aba-b" role="tab" data-aba="ias" aria-selected="false">IAs</button>
       <button class="aba-b" role="tab" data-aba="via3d" aria-selected="false">3D</button>
       <button class="aba-b" role="tab" data-aba="design" aria-selected="false">Design</button>
-      <button class="aba-b" role="tab" data-aba="nome" aria-selected="false">O nome</button>
     </nav>
     <button class="tema" id="tema" type="button" aria-label="Trocar entre o modo claro e o escuro">Escuro</button>
   </div>
@@ -437,8 +451,8 @@ footer .pagina{display:grid;gap:6px}
     <div class="pagina">
       <img class="logo" src="assets/logo-ybyra-escuro.svg" alt="Logo YBYRA" width="208" height="234">
       <div>
-        <p class="rotulo">Qualidade e rastreamento de dormentes ferroviários</p>
-        <h1>Cada dormente de madeira, da compra até a troca na via</h1>
+        <p class="rotulo">Qualidade e gestão ferroviária</p>
+        <h1>Rastreamento e controle de dormentes de madeira</h1>
         <p class="tese">O YBYRA acompanha cada peça desde o pedido ao fornecedor, passando pela chegada no pátio, pelo armazém e pela classificação, até o trecho da linha onde ela está e o momento da troca. Cada peça leva uma etiqueta de rádio (RFID) com um número exclusivo.</p>
         <div class="acoes">
           <a class="botao" href="#fluxo" data-ir="fluxo">Ver o fluxo</a>
@@ -450,6 +464,25 @@ footer .pagina{display:grid;gap:6px}
   </div>
 
   <div class="pagina">
+    <div class="secao" id="o-nome" style="scroll-margin-top:64px">
+      <p class="rotulo">O nome</p>
+      <div class="nome-abre" style="padding-top:6px">
+        <p class="palavra" lang="tpw">ybyrá</p>
+        <div>
+          <p class="lingua">tupi antigo · substantivo</p>
+          <div class="sentidos"><span>árvore</span><span>madeira</span><span>vara</span><span>cerca</span></div>
+          <p style="margin-top:14px;max-width:52ch">O primeiro sentido é <b>árvore</b>. Dele vêm os outros: a madeira que a árvore dá e o que se faz com ela.</p>
+        </div>
+      </div>
+      <div class="fileira" style="margin-top:18px">
+        <div class="cartao"><p class="rotulo">Por que esse nome</p><h3>O sistema cuida de madeira</h3><p>Cada dormente acompanhado pelo YBYRA é uma peça de madeira, com espécie, idade e histórico. O nome resume isso em uma palavra.</p></div>
+        <div class="cartao"><p class="rotulo">Origem</p><h3>Tupi antigo</h3><p>A palavra vem do tupi antigo e tem correspondente no guarani: <i lang="gn">yvyra</i>, com o mesmo sentido.</p></div>
+        <div class="cartao"><p class="rotulo">Palavra aparentada</p><h3>Ibirapuera</h3><p>Uma das leituras do nome do parque paulistano é <i>ybyrá</i> mais <i>pûera</i>: "árvore que já foi". Há outras leituras, e a origem não é consenso.</p></div>
+      </div>
+      <p class="dica-lado">Arraste para o lado para ver as três.</p>
+      <p class="fonte">Sentidos e correspondente no guarani: Wikcionário, verbete <i>ybyrá</i> (tupi antigo). Leitura de Ibirapuera: Vocabulário Tupi-Guarani, de Silveira Bueno, citado pelo Parque Ibirapuera.</p>
+    </div>
+
     <div class="secao">
       <p class="rotulo">Por que existe</p>
       <h2 style="margin:6px 0 10px">O problema</h2>
@@ -488,10 +521,11 @@ footer .pagina{display:grid;gap:6px}
       <h2 style="margin:6px 0 16px">O que tem em cada parte</h2>
       <div class="mapa-site">
         <a href="#fluxo" data-ir="fluxo"><b>Fluxo</b><span>As 13 etapas da peça, os pontos de decisão e os fluxos dos aparelhos.</span></a>
-        <a href="#sistema" data-ir="sistema"><b>Sistema</b><span>As partes do sistema, os cargos, o código da peça e os aparelhos.</span></a>
+        <a href="#sistema" data-ir="sistema"><b>Sistema</b><span>Como o sistema funciona: as partes, computador e celular, segurança, os cargos e o código da peça.</span></a>
+        <a href="#hardware" data-ir="hardware"><b>Hardware</b><span>O módulo RFID, a pistola NIR e o carro de inspeção, com os desenhos e os esquemas.</span></a>
+        <a href="#ias" data-ir="ias"><b>IAs</b><span>A leitura da placa, a IA do dormente e a IA da espécie, e como cada uma aprende.</span></a>
         <a href="#via3d" data-ir="via3d"><b>3D</b><span>Um trecho de via com os dormentes, as etiquetas e o carro de inspeção.</span></a>
         <a href="#design" data-ir="design"><b>Design</b><span>Cores, letras, regras de uso e telas reais do sistema.</span></a>
-        <a href="#nome" data-ir="nome"><b>O nome</b><span><i>Ybyrá</i>, em tupi antigo: árvore e, por extensão, madeira.</span></a>
       </div>
     </div>
   </div>
@@ -691,20 +725,72 @@ footer .pagina{display:grid;gap:6px}
     <div class="secao">
       <h3>Como as partes conversam</h3>
       <p class="texto">As equipes usam o sistema no computador ou no celular. Cada tela envia os pedidos ao serviço central, que confere as regras e grava na base de dados.</p>
-      <p class="texto" style="margin-top:10px">Em campo, sem internet, o celular guarda o trabalho e envia quando a rede volta. Cada registro leva uma identificação gerada no próprio aparelho e os horários de registro e de recebimento, o que evita duplicidade. A fila sem rede cobre troca, recusa, inspeção e vistoria.</p>
     </div>
 
     <div class="secao">
-      <h3>Responsabilidades por cargo</h3>
-      <p class="sub">Cinco cargos. Cada um acessa apenas o menu do seu trabalho. Os números indicam as etapas do fluxo.</p>
-      <div class="fileira" style="--col:5">
-        <div class="cartao"><h3>Operador de pátio</h3><p>Pedido, chegada, cadastro com a etiqueta, conferência, armazém e separação da peça.</p><p class="mono">01 02 03 05 06 12</p></div>
-        <div class="cartao"><h3>Especialista</h3><p>Verifica a qualidade e classifica a madeira.</p><p class="mono">04 07</p></div>
-        <div class="cartao"><h3>Operador da via</h3><p>Acompanha a passagem noturna e os alertas, e faz a troca na via.</p><p class="mono">08 09 13</p></div>
-        <div class="cartao"><h3>Técnico</h3><p>Vai ao ponto, inspeciona, dá a nota e pede a troca.</p><p class="mono">08 09 10 11</p></div>
-        <div class="cartao"><h3>Supervisor</h3><p>Aprova trocas e acompanha indicadores, relatório ambiental, cadastros e usuários.</p><p class="mono">11</p></div>
+      <h3>Computador e celular</h3>
+      <p class="sub">O app do celular é o próprio sistema dentro do Android: as mesmas telas, para todos os cargos, instalado por um arquivo APK.</p>
+      <div class="duas">
+        <div class="cartao"><p class="rotulo">No computador</p><h3>Todas as telas de cada cargo</h3>
+          <ul class="lista">
+            <li>O trabalho completo de cada cargo, com rede.</li>
+            <li>Três telas ficam só no computador: cadastrar pedido, ver o estoque e cadastrar usuário.</li>
+          </ul></div>
+        <div class="cartao"><p class="rotulo">No celular (app)</p><h3>O trabalho de campo, com ou sem rede</h3>
+          <ul class="lista">
+            <li>Sem internet, guarda a troca, a recusa, a inspeção e a vistoria e envia quando a rede volta. O armazém e o cadastro precisam de rede.</li>
+            <li>Cada registro leva uma identificação do aparelho e a hora em que foi feito: enviado duas vezes, entra uma só.</li>
+            <li>Consulta a peça sem rede, com uma cópia da linha guardada no aparelho.</li>
+            <li>Conversa com o módulo RFID para ler e gravar a etiqueta (hoje, com o módulo simulado).</li>
+            <li>Com rede, fica ao vivo: a tela atualiza sozinha.</li>
+          </ul></div>
+      </div>
+      <p class="dica-lado">Arraste para o lado para ver os dois.</p>
+    </div>
+
+    <div class="secao">
+      <h3>Segurança e acesso</h3>
+      <div class="fileira">
+        <div class="cartao"><h3>Entrada pessoal</h3><p>Cada pessoa entra com o próprio e-mail e senha. A senha não fica guardada como foi digitada, só numa forma embaralhada.</p></div>
+        <div class="cartao"><h3>Cada cargo, o seu menu</h3><p>O menu mostra só o que o cargo pode fazer, e o serviço central confere o cargo de novo em cada pedido: mexer na tela do navegador não libera nada.</p></div>
+        <div class="cartao"><h3>Conta protegida</h3><p>Depois de cinco senhas erradas seguidas, a conta espera antes de aceitar outra tentativa. O supervisor pode desativar uma conta, e quem estava dentro sai na hora.</p></div>
+      </div>
+      <p class="dica-lado">Arraste para o lado para ver as três.</p>
+    </div>
+
+    <div class="secao">
+      <h3>Integrações</h3>
+      <p class="sub">As planilhas que entram e saem do sistema, feitas pelo supervisor e pelo operador de pátio.</p>
+      <div class="fileira">
+        <div class="cartao"><h3>Notas pela planilha</h3><p>As notas fiscais entram pela planilha do fornecedor.</p></div>
+        <div class="cartao"><h3>Estoque para o ERP</h3><p>O estoque sai numa planilha para o sistema de gestão, com o código de material de cada item.</p></div>
+        <div class="cartao"><h3>Histórico</h3><p>Cada importação e cada envio ficam registrados.</p></div>
+      </div>
+      <p class="dica-lado">Arraste para o lado para ver as três.</p>
+    </div>
+
+    <div class="secao">
+      <h3>O que cada cargo faz</h3>
+      <p class="sub">Cinco cargos. Cada um vê só o menu do seu trabalho. Os números são as etapas do fluxo.</p>
+      <div class="fileira">
+        <div class="cartao"><h3>Operador de pátio</h3><p>Cuida da peça no pátio: acompanha os pedidos, registra a chegada da carga e fotografa a placa do feixe, cadastra cada peça com a etiqueta, guarda nas pilhas, confere os armazéns e separa a peça nova para a troca. Também envia as notas e o estoque pelas planilhas.</p><p class="mono">Etapas 01 02 03 05 06 12</p></div>
+        <div class="cartao"><h3>Especialista</h3><p>Cuida da qualidade da madeira: verifica cada peça que chega, faz o boletim da carga, classifica a espécie e a classe com apoio da pistola NIR e gera o relatório ambiental do mês.</p><p class="mono">Etapas 04 07</p></div>
+        <div class="cartao"><h3>Operador da via</h3><p>Trabalha em campo: acompanha a passagem noturna e o mapa do trecho, vai ver os alertas e registra o que viu com foto, e faz a troca com a peça que o pátio separou, ou recusa com motivo e foto. Não decide o alerta: quem decide é o técnico.</p><p class="mono">Etapas 08 09 13</p></div>
+        <div class="cartao"><h3>Técnico</h3><p>Decide no campo: confere o alerta no local e fecha ou descarta, faz a inspeção e dá a nota da peça, pede a troca e também pode aprová-la, decide as recusas da via e cuida das etiquetas sem cadastro.</p><p class="mono">Etapas 08 09 10 11</p></div>
+        <div class="cartao"><h3>Supervisor</h3><p>Acompanha tudo: aprova as trocas, vê pedidos, armazém e via juntos, lê os indicadores e o relatório ambiental e cuida dos cadastros (empresas, contratos, trechos, parâmetros e leitores) e dos usuários.</p><p class="mono">Etapa 11</p></div>
       </div>
       <p class="dica-lado">Arraste para o lado para ver os cinco.</p>
+    </div>
+
+    <div class="secao">
+      <h3>O Painel de cada cargo</h3>
+      <p class="sub">Cada pessoa começa pelo Painel, que mostra só o trabalho do seu cargo. Ele também mostra o leitor RFID e o que ainda espera internet para ser enviado.</p>
+      <div class="fileira">
+        <div class="cartao"><h3>O que fazer hoje</h3><p>O trabalho do cargo naquele dia.</p></div>
+        <div class="cartao"><h3>Sequência e história</h3><p>Os passos do cargo, com o que está parado em cada um, e a história das 13 etapas.</p></div>
+        <div class="cartao"><h3>Acompanhamento</h3><p>Os números do trabalho, para acompanhar o andamento.</p></div>
+      </div>
+      <p class="dica-lado">Arraste para o lado para ver as três.</p>
     </div>
 
     <div class="secao">
@@ -724,24 +810,39 @@ footer .pagina{display:grid;gap:6px}
     </div>
 
     <div class="secao">
-      <h3>IAs e sensores</h3>
-      <p class="sub">São quatro frentes, em estágios diferentes: a leitura da placa já opera no sistema; o módulo RFID e a câmera com IA estão em desenvolvimento.</p>
-      <div class="fileira" style="--col:2">
-        <article class="cartao ia"><div class="cab"><h3>Leitura da placa do feixe (OCR)</h3><span class="estado feito">Implementado</span></div>
-          <p>O operador tira a foto da placa do feixe e o sistema lê o texto: ata, espécie, comprimento, tratamento e ano.</p>
-          <dl><dt>Regra</dt><dd>Com 97% de confiança ou mais e igual ao pedido, o campo vem preenchido. Abaixo disso, o operador confere olhando a foto.</dd><dt>Falta</dt><dd>Treinar de novo o leitor com as correções guardadas.</dd></dl></article>
-        <article class="cartao ia"><div class="cab"><h3>Pistola NIR</h3><span class="estado parcial">Parcial</span></div>
-          <p>Um leitor de infravermelho próximo, apontado para a madeira, que ajuda o especialista a saber espécie e umidade.</p>
-          <dl><dt>Hoje</dt><dd>A tela de classificação já aceita a leitura, com a umidade obrigatória.</dd><dt>Falta</dt><dd>O aparelho mandar a leitura sozinho para o sistema.</dd></dl></article>
-        <article class="cartao ia"><div class="cab"><h3>Módulo RFID no celular</h3><span class="estado andamento">Em desenvolvimento</span></div>
+      <h3>Etiqueta sem cadastro em campo</h3>
+      <p class="sub">O que acontece quando alguém em campo lê uma etiqueta que o sistema não conhece. É a mesma regra do alerta: quem está na via registra, o técnico decide.</p>
+      <div class="fileira">
+        <div class="cartao"><p class="mono">1</p><h3>A etiqueta é lida</h3><p>Ela entra na lista "Tags sem cadastro", com o número lido e o lugar.</p></div>
+        <div class="cartao"><p class="mono">2</p><h3>A via avisa</h3><p>O operador da via só registra e avisa; não cadastra nem vincula.</p></div>
+        <div class="cartao"><p class="mono">3</p><h3>O técnico decide</h3><p>O técnico ou o supervisor cadastra uma peça nova no lugar onde a etiqueta foi achada, ou vincula a etiqueta a uma peça que já existe, como uma que teve a etiqueta quebrada. A etiqueta antiga fica inativa.</p></div>
+      </div>
+      <p class="dica-lado">Arraste para o lado para ver as três.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ HARDWARE ============ -->
+<section class="aba" id="hardware" role="tabpanel">
+  <div class="pagina">
+    <div class="bloco-titulo">
+      <p class="rotulo">Hardware</p>
+      <h2>Os aparelhos do sistema</h2>
+      <p>Três aparelhos levam o sistema para perto da madeira: o módulo RFID no celular, a pistola NIR e o carro de inspeção da via. O fluxo de cada um está na aba <a href="#fluxo" data-ir="fluxo">Fluxo</a>.</p>
+    </div>
+    <div class="fileira">
+      <article class="cartao ia"><div class="cab"><h3>Módulo RFID no celular</h3><span class="estado andamento">Em desenvolvimento</span></div>
           <p>Um aparelho próprio, encaixado no celular, que lê e grava as etiquetas. O celular é a tela.</p>
           <dl><dt>Regra</dt><dd>A gravação é rigorosa: grava, relê e compara. Se não bater, não vale.</dd><dt>Hoje</dt><dd>O módulo e a etiqueta estão em desenvolvimento. Enquanto isso, o app testa as telas com um leitor simulado.</dd></dl></article>
-        <article class="cartao ia"><div class="cab"><h3>Câmera e IA de imagem</h3><span class="estado andamento">Em desenvolvimento</span></div>
-          <p>Uma câmera no carro da via, apontada para baixo, filma os dormentes à noite. A IA marca o que parece defeito e abre um alerta.</p>
-          <dl><dt>Regra</dt><dd>A IA nunca fecha um alerta: quem confere e fecha é o técnico.</dd><dt>Hoje</dt><dd>A câmera e a IA estão em desenvolvimento. O sistema já está pronto para receber as detecções.</dd></dl></article>
-      </div>
-      <p class="dica-lado">Arraste para o lado para ver as quatro.</p>
+      <article class="cartao ia"><div class="cab"><h3>Pistola NIR</h3><span class="estado parcial">Parcial</span></div>
+          <p>Um leitor de infravermelho próximo, apontado para a madeira, que ajuda o especialista a saber espécie e umidade.</p>
+          <dl><dt>Hoje</dt><dd>A tela de classificação já aceita a leitura, com a umidade obrigatória.</dd><dt>Falta</dt><dd>O aparelho mandar a leitura sozinho para o sistema.</dd></dl></article>
+      <article class="cartao ia"><div class="cab"><h3>Carro de inspeção</h3><span class="estado parcial">Parcial</span></div>
+          <p>Passa à noite pela via, lê as etiquetas dos dormentes e mede a posição de cada um. Leva a câmera que filma os dormentes para a IA.</p>
+          <dl><dt>Hoje</dt><dd>O sistema já recebe as leituras da passagem; o veículo ainda não existe, e a câmera está em desenvolvimento.</dd></dl></article>
     </div>
+    <p class="dica-lado">Arraste para o lado para ver os três.</p>
 
     <div class="secao">
       <h3>Módulo RFID no celular</h3>
@@ -778,7 +879,7 @@ footer .pagina{display:grid;gap:6px}
         </ul>
       </div>
       <div class="esquema-lado">
-        <figure class="figura esquema"><a href="assets/esquema-modulo-rfid.png"><img src="assets/esquema-modulo-rfid.png" alt="Esquema elétrico do módulo RFID: a placa ESP32-C3 SuperMini liga ao leitor YRM100 pelo UART, com dois resistores de 470 Ω; o pino EN do leitor passa por resistores de 1 kΩ e 10 kΩ; a alimentação tem dois capacitores, de 10 µF e de 100 nF." width="900" height="740" loading="lazy"></a><figcaption>Esquema elétrico do módulo RFID, versão 1.0. Toque para ampliar.</figcaption></figure>
+        <figure class="figura esquema"><a href="assets/esquema-modulo-rfid.svg"><img src="assets/esquema-modulo-rfid.svg" alt="Esquema elétrico do módulo RFID: a placa ESP32-C3 SuperMini liga ao leitor YRM100 pelo UART, com dois resistores de 470 Ω; o pino EN do leitor passa por resistores de 1 kΩ e 10 kΩ; a alimentação tem dois capacitores, de 10 µF e de 100 nF." width="1310" height="1070" loading="lazy"></a><figcaption>Esquema elétrico do módulo RFID, versão 1.0. Toque para ampliar.</figcaption></figure>
         <div class="pecas-esquema">
           <p class="rotulo">O que tem no esquema</p>
           <dl>
@@ -838,6 +939,42 @@ footer .pagina{display:grid;gap:6px}
   </div>
 </section>
 
+<!-- ============ IAs ============ -->
+<section class="aba" id="ias" role="tabpanel">
+  <div class="pagina">
+    <div class="bloco-titulo">
+      <p class="rotulo">Inteligência artificial</p>
+      <h2>As IAs do YBYRA</h2>
+      <p>Três IAs ajudam as equipes: uma lê a placa do feixe, uma olha o estado do dormente e uma sugere a espécie da madeira. Em todas, a IA sugere e quem decide é a pessoa.</p>
+    </div>
+    <div class="fileira">
+      <article class="cartao ia"><div class="cab"><h3>Leitura da placa do feixe (OCR)</h3><span class="estado feito">Implementado</span></div>
+          <p>O operador tira a foto da placa do feixe e o sistema lê o texto: ata, espécie, comprimento, tratamento e ano.</p>
+          <dl><dt>Regra</dt><dd>Com 97% de confiança ou mais e igual ao pedido, o campo vem preenchido. Abaixo disso, o operador confere olhando a foto.</dd><dt>Falta</dt><dd>Treinar de novo o leitor com as correções guardadas.</dd></dl></article>
+      <article class="cartao ia"><div class="cab"><h3>IA do dormente</h3><span class="estado andamento">Em desenvolvimento</span></div>
+          <p>A câmera do carro da via filma os dormentes à noite, e a IA diz se a peça parece boa ou ruim. O que parece defeito vira um alerta.</p>
+          <dl><dt>Regra</dt><dd>A IA nunca fecha um alerta: quem confere no local e fecha é o técnico.</dd><dt>Hoje</dt><dd>Em desenvolvimento, começando por um banco de fotos de exemplo. O sistema já está pronto para receber as detecções.</dd></dl></article>
+      <article class="cartao ia"><div class="cab"><h3>IA da espécie</h3><span class="estado andamento">Em desenvolvimento</span></div>
+          <p>Pela foto da madeira, sugere a espécie ao especialista na classificação, na etapa 07.</p>
+          <dl><dt>Regra</dt><dd>O especialista confirma ou corrige; a sugestão nunca entra sozinha.</dd><dt>Hoje</dt><dd>Em desenvolvimento, começando com poucas espécies e cerca de 300 fotos. Por enquanto vai por foto; a leitura da pistola NIR fica para depois.</dd></dl></article>
+    </div>
+    <p class="dica-lado">Arraste para o lado para ver as três.</p>
+
+    <div class="secao">
+      <h3>Como cada IA aprende</h3>
+      <p class="sub">A IA do dormente e a IA da espécie seguem os mesmos passos.</p>
+      <ol class="passos">
+        <li><b>Juntar fotos</b><span>De dormentes e de madeira.</span></li>
+        <li><b>Marcar</b><span>O que cada foto mostra.</span></li>
+        <li><b>Limpar</b><span>Revisar as fotos e as marcações.</span></li>
+        <li><b>Separar</b><span>Uma parte para treinar e outra para testar.</span></li>
+        <li><b>Treinar</b><span>A IA aprende com as fotos de treino.</span></li>
+        <li><b>Testar</b><span>Com fotos que ela nunca viu.</span></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
 <!-- ============ 3D ============ -->
 <section class="aba" id="via3d" role="tabpanel">
   <div class="pagina">
@@ -868,9 +1005,9 @@ footer .pagina{display:grid;gap:6px}
       <h3>Cores</h3>
       <p class="sub">Seis cores, cada uma com um papel.</p>
       <div class="cores">
-        <div class="cor"><i style="background:#563624"></i><div><b>Madeira</b><span class="mono">#563624</span><span>marcadores e a nota "Ruim"</span></div></div>
+        <div class="cor"><i style="background:#563624"></i><div><b>Madeira</b><span class="mono">#563624</span><span>marcadores e os dormentes do desenho</span></div></div>
         <div class="cor"><i style="background:#D5C4A1"></i><div><b>Areia</b><span class="mono">#D5C4A1</span><span>bordas e destaques leves</span></div></div>
-        <div class="cor"><i style="background:#64786E"></i><div><b>Verde</b><span class="mono">#64786E</span><span>a nota "Bom"</span></div></div>
+        <div class="cor"><i style="background:#64786E"></i><div><b>Verde</b><span class="mono">#64786E</span><span>detalhes dos desenhos</span></div></div>
         <div class="cor"><i style="background:#1E2A20"></i><div><b>Mata</b><span class="mono">#1E2A20</span><span>texto e a barra do alto</span></div></div>
         <div class="cor"><i style="background:#F1E9E0;border-bottom:1px solid #E2D8C8"></i><div><b>Creme</b><span class="mono">#F1E9E0</span><span>o fundo das telas</span></div></div>
         <div class="cor"><i style="background:linear-gradient(90deg,#512027 50%,#A8323F 50%)"></i><div><b>Vinho</b><span class="mono">#512027 · #A8323F</span><span>só exceção: erro, divergência, o que pede ação</span></div></div>
@@ -879,12 +1016,12 @@ footer .pagina{display:grid;gap:6px}
 
     <div class="secao">
       <h3>As notas da peça</h3>
-      <p class="sub">Do melhor ao pior estado, e a peça ainda sem nota. A mesma cor no mapa do trecho e na ficha da peça.</p>
+      <p class="sub">Do melhor ao pior estado, e a peça ainda sem nota. Cores escolhidas para quem tem daltonismo, e cada nota tem um símbolo, para não depender só da cor.</p>
       <div class="notas">
-        <span class="nota" style="background:var(--nota-bom);color:#fff">Bom</span>
-        <span class="nota" style="background:var(--nota-regular);color:#1E2A20">Regular</span>
-        <span class="nota" style="background:var(--nota-ruim);color:var(--dormente-tinta)">Ruim</span>
-        <span class="nota" style="background:var(--nota-critico);color:#fff">Crítico</span>
+        <span class="nota" style="background:var(--nota-bom);color:#fff"><span aria-hidden="true">✓</span>Bom</span>
+        <span class="nota" style="background:var(--nota-regular);color:#1E2A20"><span aria-hidden="true">–</span>Regular</span>
+        <span class="nota" style="background:var(--nota-ruim);color:#1E2A20"><span aria-hidden="true">!</span>Ruim</span>
+        <span class="nota" style="background:var(--nota-critico);color:#fff"><span aria-hidden="true">✕</span>Crítico</span>
         <span class="nota" style="border:1px dashed var(--tinta3);color:var(--tinta2)">sem nota</span>
       </div>
     </div>
@@ -892,7 +1029,7 @@ footer .pagina{display:grid;gap:6px}
     <div class="secao">
       <h3>Tipografia</h3>
       <div class="tipos">
-        <div class="cartao"><p class="rotulo">Josefin Sans · títulos e texto</p><p class="tipo-a">Dormente</p><p>Uma única família para todo o texto, do título ao botão.</p></div>
+        <div class="cartao"><p class="rotulo">Lato · títulos e texto</p><p class="tipo-a">Dormente</p><p>Uma única família para todo o texto, do título ao botão.</p></div>
         <div class="cartao"><p class="rotulo">IBM Plex Mono · códigos</p><p class="tipo-b">DM-E01-L02-0031<br>km 213,112</p><p>Para etiqueta, quilômetro e tabela, onde cada dígito precisa ficar alinhado.</p></div>
       </div>
     </div>
@@ -917,7 +1054,7 @@ footer .pagina{display:grid;gap:6px}
         <figure><div><button class="b-sis perigo" type="button" tabindex="-1">Recusar com foto</button></div><figcaption><b>Ação que pede atenção</b>Em vinho, só quando há uma exceção.</figcaption></figure>
         <figure><div><div class="campo"><small>Tag da peça</small><span class="mono">BR0000000030</span></div></div><figcaption><b>Campo</b>O nome do campo fica na borda, em cima.</figcaption></figure>
         <figure><div><span class="estado feito">respondeu</span></div><figcaption><b>Situação</b>Um selo curto, com a cor do estado.</figcaption></figure>
-        <figure><div><span class="nota" style="background:var(--nota-ruim);color:var(--dormente-tinta)">Ruim</span></div><figcaption><b>Nota da peça</b>A mesma cor no mapa e na ficha.</figcaption></figure>
+        <figure><div><span class="nota" style="background:var(--nota-ruim);color:#1E2A20"><span aria-hidden="true">!</span>Ruim</span></div><figcaption><b>Nota da peça</b>Cor e símbolo próprios para cada nota.</figcaption></figure>
       </div>
     </div>
 
@@ -931,30 +1068,6 @@ footer .pagina{display:grid;gap:6px}
         <figure class="tela fone"><a href="assets/telas/alertas-celular.png"><img src="assets/telas/alertas-celular.png" alt="Tela de alertas no celular" width="390" height="844" loading="lazy"></a><figcaption><b>No celular.</b> As mesmas telas, com abas no alto.</figcaption></figure>
       </div>
       <p class="dica-lado">Arraste para o lado para ver as telas.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ============ O NOME ============ -->
-<section class="aba" id="nome" role="tabpanel">
-  <div class="pagina">
-    <div class="nome-abre">
-      <p class="palavra" lang="tpw">ybyrá</p>
-      <div>
-        <p class="lingua">tupi antigo · substantivo</p>
-        <div class="sentidos"><span>árvore</span><span>madeira</span><span>vara</span><span>cerca</span></div>
-        <p style="margin-top:14px;max-width:52ch">O primeiro sentido é <b>árvore</b>. Dele vêm os outros: a madeira que a árvore dá e o que se faz com ela.</p>
-      </div>
-    </div>
-
-    <div class="secao">
-      <div class="fileira">
-        <div class="cartao"><p class="rotulo">Por que esse nome</p><h3>O sistema cuida de madeira</h3><p>Cada dormente acompanhado pelo YBYRA é uma peça de madeira, com espécie, idade e histórico. O nome resume isso em uma palavra.</p></div>
-        <div class="cartao"><p class="rotulo">Origem</p><h3>Tupi antigo</h3><p>A palavra vem do tupi antigo e tem correspondente no guarani: <i lang="gn">yvyra</i>, com o mesmo sentido.</p></div>
-        <div class="cartao"><p class="rotulo">Palavra aparentada</p><h3>Ibirapuera</h3><p>Uma das leituras do nome do parque paulistano é <i>ybyrá</i> mais <i>pûera</i>: "árvore que já foi". Há outras leituras, e a origem não é consenso.</p></div>
-      </div>
-      <p class="dica-lado">Arraste para o lado para ver as três.</p>
-      <p class="fonte">Sentidos e correspondente no guarani: Wikcionário, verbete <i>ybyrá</i> (tupi antigo). Leitura de Ibirapuera: Vocabulário Tupi-Guarani, de Silveira Bueno, citado pelo Parque Ibirapuera.</p>
     </div>
   </div>
 </section>
@@ -1014,7 +1127,10 @@ footer .pagina{display:grid;gap:6px}
   const abas = [...document.querySelectorAll('.aba')];
   const botoes = [...document.querySelectorAll('.aba-b')];
   const abrir = (id, rolar) => {
+    // A antiga aba "O nome" agora é a primeira parte do Início: um link para #nome abre o Início nessa parte.
+    const paraNome = id === 'nome';
     if (!abas.some((a) => a.id === id)) id = 'inicio';
+    if (paraNome) requestAnimationFrame(() => document.getElementById('o-nome').scrollIntoView({ block: 'start' }));
     abas.forEach((a) => a.classList.toggle('ativa', a.id === id));
     // A cena 3D só é carregada na primeira vez que a aba abre, para não pesar no resto do site.
     const caixa3d = document.getElementById('cena3d');
@@ -1107,21 +1223,33 @@ footer .pagina{display:grid;gap:6px}
   // O fluxograma se desenha na ordem do caminho.
   document.querySelectorAll('.fx').forEach((f) => [...f.querySelectorAll('.no,.dec,.seta,.haste')].forEach((el, i) => el.style.setProperty('--i', i)));
 
-  // Movimento ao passar pelo site, só na descida: o que entra por baixo sobe até o lugar.
-  // Na subida não há efeito: o que ficou para trás continua parado e visível. Se uma parte sai por baixo
-  // (a pessoa voltou para cima), ela se esconde de novo, para subir outra vez na próxima descida.
+  // Movimento ao passar pelo site, na descida e na subida: o que entra por baixo sobe até o lugar,
+  // o que entra por cima desce até o lugar. A parte só se esconde depois de sair inteira da tela, sem ninguém ver.
   // Os números contam até o valor. Com "menos movimento" ligado no aparelho, tudo aparece parado.
   if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
     const olho = new IntersectionObserver((vistos) => vistos.forEach((v) => {
-      if (v.intersectionRatio >= 0.08) { v.target.classList.add('visto'); return; }
-      // Só uma beirada na tela: espera. A parte só se esconde quando já saiu inteira, sem ninguém ver.
+      const el = v.target;
+      if (v.intersectionRatio >= 0.08) { el.classList.add('visto'); return; }
+      // Só uma beirada na tela: espera.
       if (v.isIntersecting) return;
-      // Janela escondida ou sem tamanho (aba em segundo plano, painel recolhido): não some com nada.
-      if (!v.rootBounds || v.rootBounds.height < 50 || document.hidden) return;
+      // Janela escondida, aba fechada ou parte sem tamanho: não mexe em nada.
+      if (!v.rootBounds || v.rootBounds.height < 50 || document.hidden || !v.boundingClientRect.height) return;
+      // Saiu inteira: fica pronta para voltar pelo lado de onde vai entrar.
       const meio = v.rootBounds.top + v.rootBounds.height / 2;
-      v.target.classList.toggle('visto', v.boundingClientRect.top < meio);
+      el.classList.remove('visto');
+      el.classList.toggle('de-cima', v.boundingClientRect.top < meio);
     }), { threshold: [0, 0.08] });
-    document.querySelectorAll('.abre .logo,.abre .rotulo,.abre h1,.abre .tese,.abre .en,.abre .acoes,.bloco-titulo,.secao > .rotulo,.secao > h2,.secao > h3,.cartao,.parte,.liga,.cor,.tela,.numeros > div,.logos figure,.desenho-video,.codigo,.via-rolo,.fx-rolo,.figura,.notas,.amostras figure,.mapa-site a,.pecas-esquema,.nome-abre > *').forEach((el) => {
+    // Proteção: quando a rolagem para, tudo o que está na tela fica à mostra,
+    // mesmo que o navegador tenha deixado de avisar alguma parte (rolagem muito rápida, troca de aba).
+    let parado;
+    const conferir = () => {
+      document.querySelectorAll('.aba.ativa .rev:not(.visto)').forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.height && r.bottom > 0 && r.top < innerHeight) el.classList.add('visto');
+      });
+    };
+    addEventListener('scroll', () => { clearTimeout(parado); parado = setTimeout(conferir, 250); }, { passive: true });
+    document.querySelectorAll('.abre .logo,.abre .rotulo,.abre h1,.abre .tese,.abre .en,.abre .acoes,.bloco-titulo,.secao > .rotulo,.secao > h2,.secao > h3,.cartao,.parte,.liga,.cor,.tela,.numeros > div,.logos figure,.desenho-video,.codigo,.via-rolo,.fx-rolo,.figura,.notas,.amostras figure,.mapa-site a,.pecas-esquema,.passos li,.nome-abre > *').forEach((el) => {
       el.style.setProperty('--d', Math.min([...el.parentElement.children].indexOf(el), 6) * 70 + 'ms');
       el.classList.add('rev'); olho.observe(el);
     });

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 20 1310 1070" width="1310" height="1070" font-family="Arial, Helvetica, sans-serif">
+  <title>Esquema elétrico do módulo RFID, versão 1.0</title>
+  <desc>ESP32-C3 SuperMini ligada ao leitor RFID UHF YRM100. GPIO21 passa por R1 (470 ohms) até RXD; GPIO20 passa por R2 (470 ohms) até TXD. O pino EN do leitor fica no ponto entre R3 (1 kilo-ohm, vindo do GPIO4) e R4 (10 kilo-ohms, ligado ao GND). O 5V da placa vai ao VCC do leitor, com C2 (10 microfarads) e C3 (100 nanofarads) até o GND. Redesenho do esquema do EasyEDA.</desc>
+  <rect x="20" y="20" width="1310" height="1070" fill="#FFFFFF"/>
+
+  <!-- fios -->
+  <g fill="none" stroke="#008000" stroke-width="3" stroke-linejoin="miter">
+    <path d="M885,70 V55 H60 V552 H262"/>
+    <path d="M955,400 H930 V115 H135 V552"/>
+    <path d="M262,492 H222 V222 H450"/>
+    <path d="M540,222 H885"/>
+    <path d="M885,150 V430 H955"/>
+    <path d="M607,372 H718 V460 H745"/>
+    <path d="M840,460 H955"/>
+    <path d="M607,402 H675 V490 H745"/>
+    <path d="M840,490 H955"/>
+    <path d="M955,520 H930 V700 H90 V582 H262"/>
+    <path d="M433,700 V850"/>
+    <path d="M375,850 H495 M375,970 H495"/>
+    <path d="M450,970 V1060 H210 V552"/>
+  </g>
+
+  <!-- componentes -->
+  <g fill="none" stroke="#8B0000" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <!-- R4, de pé -->
+    <path d="M885,70 l-12,6.7 l24,13.3 l-24,13.3 l24,13.3 l-24,13.3 l24,13.3 l-12,6.8"/>
+    <!-- R3, R1 e R2, deitados -->
+    <path d="M450,222 l7.5,-12 l15,24 l15,-24 l15,24 l15,-24 l15,24 l7.5,-12"/>
+    <path d="M745,460 l7.9,-12 l15.8,24 l15.8,-24 l15.8,24 l15.8,-24 l15.8,24 l8.1,-12"/>
+    <path d="M745,490 l7.9,-12 l15.8,24 l15.8,-24 l15.8,24 l15.8,-24 l15.8,24 l8.1,-12"/>
+    <!-- C2 e C3 -->
+    <path d="M375,850 V902 M350,902 H400 M350,916 H400 M375,916 V970"/>
+    <path d="M495,850 V902 M470,902 H520 M470,916 H520 M495,916 V970"/>
+    <!-- ESP32-C3 SuperMini: corpo e pinos -->
+    <rect x="297" y="345" width="275" height="260"/>
+    <path d="M262,372 H297 M262,402 H297 M262,432 H297 M262,462 H297 M262,492 H297 M262,522 H297 M262,552 H297 M262,582 H297"/>
+    <path d="M572,372 H607 M572,402 H607 M572,432 H607 M572,462 H607 M572,492 H607 M572,522 H607 M572,552 H607 M572,582 H607"/>
+    <circle cx="560" cy="594" r="4" stroke-width="2"/>
+    <!-- YRM100: corpo e pinos -->
+    <rect x="990" y="310" width="300" height="300" rx="14" stroke="#333333"/>
+    <path d="M955,400 H990 M955,430 H990 M955,460 H990 M955,490 H990 M955,520 H990"/>
+  </g>
+
+  <!-- pontos de ligação -->
+  <g fill="#8B0000">
+    <circle cx="885" cy="222" r="6"/>
+    <circle cx="433" cy="700" r="6"/>
+    <circle cx="433" cy="850" r="6"/>
+    <circle cx="450" cy="970" r="6"/>
+    <circle cx="262" cy="552" r="6"/>
+    <circle cx="135" cy="552" r="6"/>
+    <circle cx="210" cy="552" r="6"/>
+  </g>
+
+  <!-- textos -->
+  <g fill="#1F2E9A" font-size="22">
+    <text x="912" y="82">R4</text><text x="912" y="106">10k</text>
+    <text x="495" y="172" text-anchor="middle">R3</text><text x="495" y="196" text-anchor="middle">1k</text>
+    <text x="792" y="412" text-anchor="middle">R1</text><text x="792" y="436" text-anchor="middle">470</text>
+    <text x="792" y="548" text-anchor="middle">R2</text><text x="792" y="572" text-anchor="middle">470</text>
+    <text x="408" y="912">C2</text><text x="408" y="938">10µF</text>
+    <text x="528" y="912">C3</text><text x="528" y="938">100nF</text>
+    <text x="415" y="304">ESP32</text><text x="415" y="330">ESP32C3-SuperMini</text>
+    <text x="1088" y="274">U1</text><text x="1088" y="298">YRM100</text>
+  </g>
+  <g fill="#1F2E9A" font-size="21">
+    <text x="318" y="380">GPIO0</text><text x="318" y="410">GPIO1</text><text x="318" y="440">GPIO2</text><text x="318" y="470">GPIO3</text>
+    <text x="318" y="500">GPIO4</text><text x="318" y="530">3V3</text><text x="318" y="560">GND</text><text x="318" y="590">5V</text>
+    <g text-anchor="end">
+      <text x="552" y="380">GPIO21</text><text x="552" y="410">GPIO20</text><text x="552" y="440">GPIO10</text><text x="552" y="470">GPIO9</text>
+      <text x="552" y="500">GPIO8</text><text x="552" y="530">GPIO7</text><text x="552" y="560">GPIO6</text><text x="552" y="590">GPIO5</text>
+    </g>
+    <text x="998" y="408">GND</text><text x="998" y="438">EN</text><text x="998" y="468">RXD</text><text x="998" y="498">TXD</text><text x="998" y="528">VCC</text>
+  </g>
+  <g fill="#1F2E9A" font-size="16">
+    <g text-anchor="end">
+      <text x="290" y="367">9</text><text x="290" y="397">10</text><text x="290" y="427">11</text><text x="290" y="457">12</text>
+      <text x="290" y="487">13</text><text x="290" y="517">14</text><text x="290" y="547">15</text><text x="290" y="577">16</text>
+    </g>
+    <text x="580" y="367">8</text><text x="580" y="397">7</text><text x="580" y="427">6</text><text x="580" y="457">5</text>
+    <text x="580" y="487">4</text><text x="580" y="517">3</text><text x="580" y="547">2</text><text x="580" y="577">1</text>
+    <text x="962" y="395">1</text><text x="962" y="425">2</text><text x="962" y="455">3</text><text x="962" y="485">4</text><text x="962" y="515">5</text>
+  </g>
+  <text x="1150" y="460" fill="#1F2E9A" font-size="30" font-weight="700" text-anchor="middle" transform="rotate(-90 1150 460)">YRM100</text>
+</svg>
