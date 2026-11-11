@@ -26,8 +26,24 @@ canvas:active{cursor:grabbing}
 .botoes{display:flex;gap:6px;flex-wrap:wrap}
 button{font:inherit;font-weight:700;min-height:44px;padding:0 14px;border-radius:var(--raio);border:1px solid var(--linha);background:var(--sup);color:var(--tinta);cursor:pointer}
 button:hover{border-color:var(--areia)}
-button:focus-visible{outline:3px solid var(--areia);outline-offset:2px}
-.ficha{position:fixed;left:10px;bottom:10px;width:min(300px,calc(100% - 20px));background:var(--sup);border:1px solid var(--linha);border-radius:var(--raio);padding:12px 14px;box-shadow:0 8px 24px -14px rgba(0,0,0,.5)}
+/* O contorno do foco: verde-mata de dia, areia à noite (os dois aparecem bem sobre o fundo) */
+button:focus-visible,.ficha:focus-visible{outline:3px solid #1E2A20;outline-offset:2px}
+body.noite button:focus-visible,body.noite .ficha:focus-visible{outline-color:var(--areia)}
+/* Girar e aproximar sem arrastar: botões com o nome escrito, numa fileira embaixo à direita (no celular, a largura toda).
+   O teclado faz o mesmo: setas ← → giram, + e − (ou ↑ ↓) aproximam e afastam. */
+.controles{position:fixed;right:10px;bottom:10px;display:flex;gap:6px}
+.controles button{padding:0 12px;white-space:nowrap}
+canvas:focus-visible{outline:3px solid #1E2A20;outline-offset:-3px}
+body.noite canvas:focus-visible{outline-color:var(--areia)}
+.ficha{position:fixed;left:10px;bottom:64px;width:min(300px,calc(100% - 20px));background:var(--sup);border:1px solid var(--linha);border-radius:var(--raio);padding:12px 14px;box-shadow:0 8px 24px -14px rgba(0,0,0,.5)}
+/* A lista dos dormentes: a cena em texto, para quem não usa o mouse ou não vê a cena */
+.lista{position:fixed;right:10px;top:64px;bottom:64px;width:min(330px,calc(100% - 20px));overflow:auto;background:var(--sup);border:1px solid var(--linha);border-radius:var(--raio);padding:10px 12px;box-shadow:0 8px 24px -14px rgba(0,0,0,.5)}
+.lista[hidden]{display:none}
+.lista-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.lista ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.lista li button{width:100%;min-height:44px;display:grid;grid-template-columns:auto 1fr;gap:0 10px;text-align:left;padding:6px 10px;font-weight:400;font-size:.88rem}
+.lista li button b{font-weight:700}
+.lista li button span{grid-column:2;color:var(--tinta2)}
 .ficha[hidden]{display:none}
 .ficha-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .ficha-topo b{font-size:1.05rem}
@@ -36,44 +52,60 @@ button:focus-visible{outline:3px solid var(--areia);outline-offset:2px}
 .ficha dd{margin:0;font-weight:600}
 .alerta{color:#A8323F}
 body.noite .alerta{color:#D9848C}
-.dica{position:fixed;right:12px;bottom:12px;font-size:.8rem;color:var(--tinta2);background:var(--sup);border:1px solid var(--linha);border-radius:999px;padding:4px 12px;pointer-events:none}
+.dica{position:fixed;left:12px;bottom:20px;font-size:.8rem;color:var(--tinta2);background:var(--sup);border:1px solid var(--linha);border-radius:999px;padding:4px 12px;pointer-events:none}
 .aviso{position:fixed;inset:0;display:grid;place-items:center;padding:24px;text-align:center}
 .aviso[hidden]{display:none}
-@media (max-width:560px){.dica{display:none}.caixa small{display:none}}
+/* A dica divide a linha de baixo com os botões; quando não cabe, sai (a aba 3D do site já explica) */
+@media (max-width:860px){.dica{display:none}}
+@media (max-width:560px){.caixa small{display:none}.lista{top:10px}.controles{left:10px}.controles button{flex:1;padding:0 6px}}
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
 </script>
 </head>
 <body>
-<canvas id="cena" aria-label="Trecho de via em 3D, com dormentes de madeira e o carro de inspeção"></canvas>
+<canvas id="cena" tabindex="0" aria-label="Trecho de via em 3D, com dormentes de madeira e o carro de inspeção. As setas para a esquerda e a direita giram a cena; mais e menos, ou as setas para cima e para baixo, aproximam e afastam. A lista mostra os dormentes em texto."></canvas>
 
 <div class="barra">
-  <div class="caixa" aria-label="Notas dos dormentes">
+  <div class="caixa" role="group" aria-label="Legenda">
     <small>Nota</small>
     <span class="nota"><i style="background:#2B7550"></i>✓ Bom</span>
     <span class="nota"><i style="background:#E9CB76"></i>– Regular</span>
     <span class="nota"><i style="background:#D07A35"></i>! Ruim</span>
     <span class="nota"><i style="background:#5C1424"></i>✕ Crítico</span>
+    <span class="nota"><i style="background:#5E6660"></i>? Etiqueta sem resposta</span>
   </div>
   <div class="botoes">
     <button type="button" id="b-luz">Noite</button>
     <button type="button" id="b-carro">Pausar</button>
     <button type="button" id="b-vista">Vista de cima</button>
+    <button type="button" id="b-lista" aria-expanded="false" aria-controls="lista">Lista</button>
   </div>
 </div>
 
-<div class="ficha" id="ficha" hidden>
+<div class="controles" role="group" aria-label="Mover a cena">
+  <button type="button" data-girar="1">Girar ←</button>
+  <button type="button" data-girar="-1">Girar →</button>
+  <button type="button" data-zoom="0.8">Aproximar</button>
+  <button type="button" data-zoom="1.25">Afastar</button>
+</div>
+
+<section class="lista" id="lista" hidden aria-labelledby="lista-t">
+  <div class="lista-topo"><b id="lista-t">Os 16 dormentes do trecho</b><button type="button" id="lista-fechar">Fechar</button></div>
+  <ol id="lista-itens"></ol>
+</section>
+
+<div class="ficha" id="ficha" hidden tabindex="-1" role="region" aria-label="Ficha do dormente">
   <div class="ficha-topo"><b class="mono" id="f-peca"></b><button type="button" id="f-fechar">Fechar</button></div>
   <dl>
-    <dt>Espécie</dt><dd>Espécie de exemplo</dd>
+    <dt>Espécie</dt><dd>Eucalipto-citriodora (exemplo)</dd>
     <dt>Comprimento</dt><dd>2,80 m</dd>
     <dt>Nota</dt><dd id="f-nota"></dd>
     <dt>Km</dt><dd class="mono" id="f-km"></dd>
     <dt>Etiqueta</dt><dd id="f-tag"></dd>
   </dl>
 </div>
-<p class="dica">Dados de exemplo · arraste para girar · selecione um dormente</p>
+<p class="dica">Dados de exemplo · arraste para girar · selecione um dormente ou abra a lista</p>
 <p class="aviso" id="aviso" hidden>Este aparelho não conseguiu abrir a cena 3D.</p>
 
 <script type="module">
@@ -152,6 +184,34 @@ for (let i = 0; i < PEDRAS; i++) {
 pedras.receiveShadow = true;
 cena.add(pedras);
 
+// ---------- símbolos desenhados na peça ----------
+// A nota não depende só da cor: a faixa da ponta leva o símbolo (✓ – ! ✕) e um contorno creme que a solta da madeira.
+// A etiqueta que não responde fica cinza, com um "?": o vinho fica só para a nota Crítico.
+function textura(fundo, simbolo, tinta, largura, altura) {
+  const tela = document.createElement('canvas');
+  tela.width = largura; tela.height = altura;
+  const c = tela.getContext('2d');
+  c.fillStyle = '#F1E9E0'; c.fillRect(0, 0, largura, altura);
+  c.fillStyle = fundo; c.fillRect(7, 7, largura - 14, altura - 14);
+  c.fillStyle = tinta; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = `700 ${Math.round(Math.min(largura, altura) * 0.62)}px Lato, system-ui, sans-serif`;
+  c.fillText(simbolo, largura / 2, altura / 2 + 2);
+  const t = new THREE.CanvasTexture(tela);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+const TINTA_SIMBOLO = { 'Bom': '#FFFFFF', 'Regular': '#1E2A20', 'Ruim': '#1E2A20', 'Crítico': '#FFFFFF' };
+const MAT_NOTA = {};
+for (const nota of Object.keys(NOTAS)) {
+  const lado = new THREE.MeshStandardMaterial({ color: NOTAS[nota], roughness: 0.6 });
+  const face = new THREE.MeshStandardMaterial({ map: textura(NOTAS[nota], SIMBOLOS[nota], TINTA_SIMBOLO[nota], 128, 84), roughness: 0.6 });
+  // A caixa tem seis faces: direita, esquerda, cima, baixo, frente e trás. O símbolo vai em cima e na frente.
+  MAT_NOTA[nota] = [lado, lado, face, lado, face, lado];
+}
+const MAT_TAG_MUDA = new THREE.MeshStandardMaterial({ map: textura('#5E6660', '?', '#FFFFFF', 64, 128), roughness: 0.6 });
+const MAT_TAG_MUDA_LADO = new THREE.MeshStandardMaterial({ color: '#5E6660', roughness: 0.6 });
+
 // ---------- dormentes ----------
 const N = 16, PASSO = 0.62, X0 = -((N - 1) * PASSO) / 2, Y_DORMENTE = 0.2, ALTURA = 0.17;
 const notas = Array(N).fill('Bom');
@@ -170,13 +230,14 @@ for (let i = 0; i < N; i++) {
   corpo.userData.i = i;
   g.add(corpo);
   // a nota aparece numa faixa na ponta, para a madeira continuar parecendo madeira
-  const faixa = new THREE.Mesh(new THREE.BoxGeometry(0.275, ALTURA + 0.012, 0.18), new THREE.MeshStandardMaterial({ color: NOTAS[notas[i]], roughness: 0.6 }));
+  const faixa = new THREE.Mesh(new THREE.BoxGeometry(0.275, ALTURA + 0.012, 0.18), MAT_NOTA[notas[i]]);
   faixa.position.set(0, ALTURA / 2, 1.3);
   g.add(faixa);
-  // a etiqueta RFID
+  // a etiqueta RFID: creme (pisca quando o carro lê) ou cinza com "?" (não responde)
   const responde = i !== SEM_RESPOSTA;
-  const matTag = new THREE.MeshStandardMaterial({ color: responde ? '#D5C4A1' : '#A8323F', roughness: 0.5, emissive: responde ? '#FFF3C4' : '#A8323F', emissiveIntensity: responde ? 0 : 0.35 });
-  const tag = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.22), matTag);
+  const matTag = responde ? new THREE.MeshStandardMaterial({ color: '#D5C4A1', roughness: 0.5, emissive: '#FFF3C4', emissiveIntensity: 0 }) : MAT_TAG_MUDA;
+  const tag = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.22),
+    responde ? matTag : [MAT_TAG_MUDA_LADO, MAT_TAG_MUDA_LADO, MAT_TAG_MUDA, MAT_TAG_MUDA_LADO, MAT_TAG_MUDA_LADO, MAT_TAG_MUDA_LADO]);
   tag.position.set(0, ALTURA + 0.015, 0.36);
   tag.castShadow = true;
   g.add(tag);
@@ -276,24 +337,83 @@ botaoVista.addEventListener('click', () => {
 let mexeu = false;
 controles.addEventListener('start', () => { alvoCamera = null; mexeu = true; });
 
+// ---------- girar e aproximar pelos botões ----------
+// Cada toque gira 20° em volta do centro da via ou chega 20% mais perto (ou longe), dentro dos mesmos limites do mouse.
+const EIXO_Y = new THREE.Vector3(0, 1, 0);
+function moverCamera(girar, zoom) {
+  mexeu = true;
+  const v = (alvoCamera || camera.position).clone().sub(controles.target);
+  if (girar) v.applyAxisAngle(EIXO_Y, girar * (Math.PI / 9));
+  if (zoom) v.setLength(THREE.MathUtils.clamp(v.length() * zoom, controles.minDistance, controles.maxDistance));
+  alvoCamera = controles.target.clone().add(v);
+}
+document.querySelectorAll('[data-girar]').forEach((b) => b.addEventListener('click', () => moverCamera(Number(b.dataset.girar), 0)));
+document.querySelectorAll('[data-zoom]').forEach((b) => b.addEventListener('click', () => moverCamera(0, Number(b.dataset.zoom))));
+// Pelo teclado, com o foco na cena ou nos botões de mover: setas ← → giram; + e − (ou ↑ ↓) aproximam e afastam.
+// Nos outros botões e na lista as setas não mexem na cena, para não surpreender quem só quer rolar a página.
+const TECLAS = { ArrowLeft: [1, 0], ArrowRight: [-1, 0], ArrowUp: [0, 0.8], ArrowDown: [0, 1.25], '+': [0, 0.8], '=': [0, 0.8], '-': [0, 1.25] };
+addEventListener('keydown', (e) => {
+  const passo = TECLAS[e.key];
+  if (!passo || e.altKey || e.ctrlKey || e.metaKey) return;
+  const foco = document.activeElement;
+  if (foco !== canvas && !foco.closest('.controles')) return;
+  e.preventDefault();
+  moverCamera(passo[0], passo[1]);
+});
+
 // ---------- escolher um dormente ----------
 const ficha = document.getElementById('ficha');
-let escolhido = -1;
-function escolher(i) {
+const codigo = (i) => 'DM-E01-L02-' + String(20 + i).padStart(4, '0');
+const km = (i) => (213.1 + i * 0.00062).toFixed(3).replace('.', ',');
+let escolhido = -1, focoVolta = null;
+// Pela lista (teclado ou leitor de tela), o foco vai para a ficha e, ao fechar, volta para onde estava.
+function escolher(i, levarFoco) {
   escolhido = i;
   dormentes.forEach((d, k) => { d.matCorpo.emissiveIntensity = k === i ? 0.4 : 0; });
-  if (i < 0) { ficha.hidden = true; return; }
+  if (i < 0) {
+    const estavaNaFicha = ficha.contains(document.activeElement);
+    ficha.hidden = true;
+    if (focoVolta && estavaNaFicha) focoVolta.focus();
+    focoVolta = null;
+    return;
+  }
   const d = dormentes[i];
-  document.getElementById('f-peca').textContent = 'DM-E01-L02-' + String(20 + i).padStart(4, '0');
+  document.getElementById('f-peca').textContent = codigo(i);
   document.getElementById('f-nota').textContent = SIMBOLOS[d.nota] + ' ' + d.nota;
-  document.getElementById('f-km').textContent = (213.1 + i * 0.00062).toFixed(3).replace('.', ',');
+  document.getElementById('f-km').textContent = km(i);
   const celula = document.getElementById('f-tag');
-  celula.textContent = d.responde ? 'respondeu' : 'não respondeu';
+  celula.textContent = d.responde ? 'respondeu' : '? não respondeu';
   celula.className = d.responde ? '' : 'alerta';
   ficha.hidden = false;
+  if (levarFoco) ficha.focus();
 }
 document.getElementById('f-fechar').addEventListener('click', () => escolher(-1));
-addEventListener('keydown', (e) => { if (e.key === 'Escape') escolher(-1); });
+
+// ---------- a lista dos dormentes ----------
+const lista = document.getElementById('lista');
+const botaoLista = document.getElementById('b-lista');
+const itens = document.getElementById('lista-itens');
+dormentes.forEach((d, i) => {
+  const li = document.createElement('li');
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.innerHTML = `<b class="mono">${codigo(i)}</b>${SIMBOLOS[d.nota]} ${d.nota}<span>km ${km(i)} · etiqueta ${d.responde ? 'respondeu' : 'não respondeu'}</span>`;
+  b.addEventListener('click', () => { abrirLista(false); focoVolta = botaoLista; escolher(i, true); });
+  li.append(b);
+  itens.append(li);
+});
+function abrirLista(abrir) {
+  lista.hidden = !abrir;
+  botaoLista.setAttribute('aria-expanded', abrir);
+  if (abrir) itens.querySelector('button').focus();
+}
+botaoLista.addEventListener('click', () => abrirLista(lista.hidden));
+document.getElementById('lista-fechar').addEventListener('click', () => { abrirLista(false); botaoLista.focus(); });
+addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!lista.hidden) { abrirLista(false); botaoLista.focus(); return; }
+  escolher(-1);
+});
 
 const raio = new THREE.Raycaster(), ponto = new THREE.Vector2();
 let apertou = null;
